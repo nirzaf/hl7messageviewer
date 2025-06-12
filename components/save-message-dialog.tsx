@@ -112,6 +112,18 @@ export function SaveMessageDialog({ open, onOpenChange, message, rawMessage }: S
     setIsSaving(true)
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast({
+          title: "Not authenticated",
+          description: "You must be logged in to save a message.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
       // Prepare the data for insertion
       const messageData = {
         name: formData.name.trim(),
@@ -120,6 +132,7 @@ export function SaveMessageDialog({ open, onOpenChange, message, rawMessage }: S
         parsed_message: message,
         message_type: message.messageType,
         version: message.version,
+        user_id: user.id, // Add user_id
       }
 
       console.log("Attempting to save message:", messageData)

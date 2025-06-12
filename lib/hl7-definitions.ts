@@ -17,9 +17,14 @@ export interface HL7SegmentDefinition {
   fields: { [key: number]: HL7FieldDefinition }
 }
 
-export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
+export interface HL7VersionedDefinition {
+  [version: string]: HL7SegmentDefinition;
+}
+
+export const HL7_SEGMENTS: { [key: string]: HL7VersionedDefinition } = {
   MSH: {
-    name: "Message Header",
+    "2.5": { // Assuming existing definitions are for v2.5
+      name: "Message Header",
     description:
       "The MSH segment defines the intent, source, destination, and some specifics of the syntax of a message.",
     purpose: "Contains message control information",
@@ -141,9 +146,31 @@ export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
         example: "2.5",
       },
     },
+    },
+    "2.3": { // Placeholder for v2.3
+      name: "Message Header",
+      description: "The MSH segment defines the intent, source, destination, and some specifics of the syntax of a message for HL7 v2.3.",
+      purpose: "Contains message control information for HL7 v2.3",
+      fields: { // Simplified fields for placeholder
+        1: { name: "Field Separator", description: "Field separator character", dataType: "ST", length: 1, required: true, repeatable: false },
+        2: { name: "Encoding Characters", description: "Encoding characters", dataType: "ST", length: 4, required: true, repeatable: false },
+        11: { name: "Version ID", description: "HL7 version for v2.3", dataType: "VID", length: 60, required: true, repeatable: false, example: "2.3" },
+      }
+    },
+    "2.6": { // Placeholder for v2.6
+      name: "Message Header",
+      description: "The MSH segment defines the intent, source, destination, and some specifics of the syntax of a message for HL7 v2.6.",
+      purpose: "Contains message control information for HL7 v2.6",
+      fields: { // Simplified fields for placeholder
+        1: { name: "Field Separator", description: "Field separator character", dataType: "ST", length: 1, required: true, repeatable: false },
+        2: { name: "Encoding Characters", description: "Encoding characters", dataType: "ST", length: 4, required: true, repeatable: false },
+        11: { name: "Version ID", description: "HL7 version for v2.6", dataType: "VID", length: 60, required: true, repeatable: false, example: "2.6" },
+      }
+    }
   },
   PID: {
-    name: "Patient Identification",
+    "2.5": { // Assuming existing definitions are for v2.5
+      name: "Patient Identification",
     description:
       "The PID segment is used by all applications as the primary means of communicating patient identification information.",
     purpose: "Contains patient demographic and identification information",
@@ -289,9 +316,33 @@ export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
         example: "E",
       },
     },
+    },
+    "2.3": { // Placeholder for v2.3
+      name: "Patient Identification",
+      description: "The PID segment is used by all applications as the primary means of communicating patient identification information for HL7 v2.3.",
+      purpose: "Contains patient demographic and identification information for HL7 v2.3",
+      fields: {
+        0: { name: "Segment ID", description: "Segment identifier", dataType: "ST", length: 3, required: true, repeatable: false, example: "PID" },
+        1: { name: "Set ID - PID", description: "Set ID for PID segment", dataType: "SI", required: false, repeatable: false },
+        3: { name: "Patient Identifier List (v2.3)", description: "Patient Identifier List for HL7 v2.3", dataType: "CX", required: true, repeatable: true, example: "12345^^^MPI" }, // Made required for v2.3
+        5: { name: "Patient Name (v2.3)", description: "Patient Name for HL7 v2.3", dataType: "XPN", required: false, repeatable: true, example: "DOE^JOHN" }, // Made optional for v2.3
+      }
+    },
+    "2.6": { // Placeholder for v2.6
+      name: "Patient Identification",
+      description: "The PID segment is used by all applications as the primary means of communicating patient identification information for HL7 v2.6.",
+      purpose: "Contains patient demographic and identification information for HL7 v2.6",
+      fields: {
+        0: { name: "Segment ID", description: "Segment identifier", dataType: "ST", length: 3, required: true, repeatable: false, example: "PID" },
+        1: { name: "Set ID - PID", description: "Set ID for PID segment", dataType: "SI", required: false, repeatable: false },
+        3: { name: "Patient Identifier List (v2.6)", description: "Patient Identifier List for HL7 v2.6", dataType: "CX", required: true, repeatable: true, example: "67890^^^SITEID" },
+        5: { name: "Patient Name (v2.6)", description: "Patient Name for HL7 v2.6", dataType: "XPN", required: true, repeatable: true, length: 50, example: "ROE^JANE" }, // Made required and changed maxLength to length for v2.6
+      }
+    }
   },
   PV1: {
-    name: "Patient Visit",
+    "2.5": { // Assuming existing definitions are for v2.5
+      name: "Patient Visit",
     description:
       "The PV1 segment is used by Registration/Patient Administration applications to communicate information on an account or visit-specific basis.",
     purpose: "Contains visit-specific information",
@@ -394,9 +445,29 @@ export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
         example: "SUR",
       },
     },
+    },
+    "2.3": { // Placeholder for v2.3
+      name: "Patient Visit",
+      description: "The PV1 segment is used by Registration/Patient Administration applications to communicate information on an account or visit-specific basis for HL7 v2.3.",
+      purpose: "Contains visit-specific information for HL7 v2.3",
+      fields: { // Simplified fields for placeholder
+        2: { name: "Patient Class", description: "Patient class for v2.3", dataType: "IS", required: true, repeatable: false },
+        7: { name: "Attending Doctor", description: "Attending physician for v2.3", dataType: "XCN", required: false, repeatable: true },
+      }
+    },
+    "2.6": { // Placeholder for v2.6
+      name: "Patient Visit",
+      description: "The PV1 segment is used by Registration/Patient Administration applications to communicate information on an account or visit-specific basis for HL7 v2.6.",
+      purpose: "Contains visit-specific information for HL7 v2.6",
+      fields: { // Simplified fields for placeholder
+        2: { name: "Patient Class", description: "Patient class for v2.6", dataType: "IS", required: true, repeatable: false },
+        7: { name: "Attending Doctor", description: "Attending physician for v2.6", dataType: "XCN", required: false, repeatable: true },
+      }
+    }
   },
   OBX: {
-    name: "Observation/Result",
+    "2.5": { // Assuming existing definitions are for v2.5
+      name: "Observation/Result",
     description: "The OBX segment is used to transmit a single observation or observation fragment.",
     purpose: "Contains observation results and values",
     fields: {
@@ -493,9 +564,29 @@ export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
         table: "0080",
       },
     },
+    },
+    "2.3": { // Placeholder for v2.3
+      name: "Observation/Result",
+      description: "The OBX segment is used to transmit a single observation or observation fragment for HL7 v2.3.",
+      purpose: "Contains observation results and values for HL7 v2.3",
+      fields: { // Simplified fields for placeholder
+        3: { name: "Observation Identifier", description: "Observation identifier for v2.3", dataType: "CE", required: true, repeatable: false },
+        5: { name: "Observation Value", description: "Observation value for v2.3", dataType: "Varies", required: false, repeatable: true },
+      }
+    },
+    "2.6": { // Placeholder for v2.6
+      name: "Observation/Result",
+      description: "The OBX segment is used to transmit a single observation or observation fragment for HL7 v2.6.",
+      purpose: "Contains observation results and values for HL7 v2.6",
+      fields: { // Simplified fields for placeholder
+        3: { name: "Observation Identifier", description: "Observation identifier for v2.6", dataType: "CE", required: true, repeatable: false },
+        5: { name: "Observation Value", description: "Observation value for v2.6", dataType: "Varies", required: false, repeatable: true },
+      }
+    }
   },
   NK1: {
-    name: "Next of Kin/Associated Parties",
+    "2.5": { // Assuming existing definitions are for v2.5
+      name: "Next of Kin/Associated Parties",
     description: "The NK1 segment contains information about the patient's other related parties.",
     purpose: "Contains next of kin and emergency contact information",
     fields: {
@@ -570,15 +661,41 @@ export const HL7_SEGMENTS: { [key: string]: HL7SegmentDefinition } = {
         table: "0131",
       },
     },
+    },
+    "2.3": { // Placeholder for v2.3
+      name: "Next of Kin/Associated Parties",
+      description: "The NK1 segment contains information about the patient's other related parties for HL7 v2.3.",
+      purpose: "Contains next of kin and emergency contact information for HL7 v2.3",
+      fields: { // Simplified fields for placeholder
+        2: { name: "Name", description: "Next of kin name for v2.3", dataType: "XPN", required: false, repeatable: true },
+        3: { name: "Relationship", description: "Relationship to patient for v2.3", dataType: "CE", required: false, repeatable: false },
+      }
+    },
+    "2.6": { // Placeholder for v2.6
+      name: "Next of Kin/Associated Parties",
+      description: "The NK1 segment contains information about the patient's other related parties for HL7 v2.6.",
+      purpose: "Contains next of kin and emergency contact information for HL7 v2.6",
+      fields: { // Simplified fields for placeholder
+        2: { name: "Name", description: "Next of kin name for v2.6", dataType: "XPN", required: false, repeatable: true },
+        3: { name: "Relationship", description: "Relationship to patient for v2.6", dataType: "CE", required: false, repeatable: false },
+      }
+    }
   },
 }
 
-export function getFieldDefinition(segmentName: string, fieldIndex: number): HL7FieldDefinition | null {
-  const segment = HL7_SEGMENTS[segmentName]
+export function getFieldDefinition(segmentName: string, fieldIndex: number, version: string = "2.5"): HL7FieldDefinition | null {
+  const versionedSegment = HL7_SEGMENTS[segmentName]
+  if (!versionedSegment) return null
+
+  const segment = versionedSegment[version] || versionedSegment["2.5"] // Fallback to 2.5
   if (!segment) return null
+
   return segment.fields[fieldIndex] || null
 }
 
-export function getSegmentDefinition(segmentName: string): HL7SegmentDefinition | null {
-  return HL7_SEGMENTS[segmentName] || null
+export function getSegmentDefinition(segmentName: string, version: string = "2.5"): HL7SegmentDefinition | null {
+  const versionedSegment = HL7_SEGMENTS[segmentName]
+  if (!versionedSegment) return null
+
+  return versionedSegment[version] || versionedSegment["2.5"] // Fallback to 2.5
 }

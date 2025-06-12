@@ -143,7 +143,7 @@ export function SavedMessagesDialog({ open, onOpenChange, onLoadMessage }: Saved
         )}
 
         <div className="relative mb-4">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
           <Input
             placeholder="Search messages..."
             value={searchTerm}
@@ -157,13 +157,13 @@ export function SavedMessagesDialog({ open, onOpenChange, onLoadMessage }: Saved
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div> {/* Assuming border-primary adapts */}
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Loading messages...</p>
               </div>
             </div>
           ) : connectionError ? (
             <div className="text-center py-8">
-              <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-2" />
+              <AlertTriangle className="h-12 w-12 text-red-500 dark:text-red-400 mx-auto mb-2" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">Connection Error</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 Unable to connect to the database. Please check your configuration.
@@ -171,7 +171,7 @@ export function SavedMessagesDialog({ open, onOpenChange, onLoadMessage }: Saved
             </div>
           ) : filteredMessages.length === 0 ? (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-slate-400 mx-auto mb-2" />
+              <FileText className="h-12 w-12 text-slate-500 dark:text-slate-400 mx-auto mb-2" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No messages found</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {messages.length === 0
@@ -204,7 +204,7 @@ export function SavedMessagesDialog({ open, onOpenChange, onLoadMessage }: Saved
                     <TableCell>{message.version}</TableCell>
                     <TableCell className="text-sm">
                       <div className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1 text-slate-400" />
+                        <Calendar className="h-3 w-3 mr-1 text-slate-500 dark:text-slate-400" />
                         {new Date(message.created_at).toLocaleDateString()}
                       </div>
                     </TableCell>

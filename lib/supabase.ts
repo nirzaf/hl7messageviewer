@@ -14,7 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single supabase client for the entire app
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // Disable auth persistence for demo
+    // persistSession: true, // Default is true, so this can be omitted or explicitly set.
   },
 })
 

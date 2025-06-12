@@ -32,6 +32,8 @@ import { SaveMessageDialog } from "@/components/save-message-dialog"
 import { SavedMessagesDialog } from "@/components/saved-messages-dialog"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { AuthForm } from "@/components/auth-form"
+import { HL7DiffView } from "@/components/hl7-diff-view"; // Import HL7DiffView
 import { useToast } from "@/hooks/use-toast"
 import { testSupabaseConnection } from "@/lib/supabase"
 
@@ -48,15 +50,41 @@ export default function HL7Viewer() {
   const [message, setMessage] = useState("")
   const [parsedMessage, setParsedMessage] = useState<ParsedHL7Message | null>(null)
   const [errors, setErrors] = useState<HL7Error[]>([])
+import type { Session } from "@supabase/supabase-js"; // Import Session type
+
+  const [globalSearchTermInput, setGlobalSearchTermInput] = useState(""); // Input value
+  const [globalSearchTerm, setGlobalSearchTerm] = useState(""); // Debounced value
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("tree")
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      const storedTab = localStorage.getItem("hl7ViewerActiveTab");
+      if (storedTab && ["tree", "table", "raw"].includes(storedTab)) {
+        return storedTab;
+      }
+    }
+    return "tree"; // Default tab
+  });
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showSavedMessagesDialog, setShowSavedMessagesDialog] = useState(false)
-  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null)
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null) // Still useful for general connection status
+  const [session, setSession] = useState<Session | null>(null);
+
+import { compareHl7Messages, type DiffResult } from "@/lib/hl7-diff"; // Import diffing tools
+
+  // States for HL7 Diffing
+  const [messageA, setMessageA] = useState("");
+  const [messageB, setMessageB] = useState("");
+  const [parsedMessageA, setParsedMessageA] = useState<ParsedHL7Message | null>(null);
+  const [parsedMessageB, setParsedMessageB] = useState<ParsedHL7Message | null>(null);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
 
   const parseMessage = useCallback(async (input: string) => {
     if (!input.trim()) {
+      // If main message input is cleared, reset its parsed state
+      // This specific parseMessage is for the primary viewer, not diffing.
+      // We might need separate parsing logic for diff inputs or make this more generic.
+      // For now, this is fine.
       setParsedMessage(null)
       setErrors([])
       return
@@ -130,6 +158,24 @@ export default function HL7Viewer() {
     }
   }, [])
 
+  // Debounce for global search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setGlobalSearchTerm(globalSearchTermInput);
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [globalSearchTermInput]);
+
+  // Persist active tab to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hl7ViewerActiveTab", activeTab);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     const checkConnection = async () => {
       const result = await testSupabaseConnection()
@@ -149,8 +195,8 @@ export default function HL7Viewer() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <FileText className="h-6 w-6 text-white" />
+                <div className="p-2 bg-primary text-primary-foreground rounded-lg"> {/* Use primary color for theme adaptiveness */}
+                  <FileText className="h-6 w-6" /> {/* Text color will be inherited from text-primary-foreground */}
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">HL7 Message Viewer</h1>
@@ -164,23 +210,81 @@ export default function HL7Viewer() {
                   variant="outline"
                   onClick={() => setShowSavedMessagesDialog(true)}
                   className="flex items-center gap-2"
-                  disabled={supabaseConnected === false}
-                  title={supabaseConnected === false ? "Database connection required" : "View saved messages"}
+                  disabled={!session} // Updated disabled state
+                  title={!session ? "Login required to view saved messages" : "View saved messages"}
                 >
                   <Database className="h-4 w-4" />
                   Saved Messages
                 </Button>
+                <AuthForm onSessionChange={setSession} /> {/* Pass onSessionChange */}
                 <ThemeToggle />
+              </div>
+            </div>
+
+            {/* Diff Input Section - Simplified for now */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Compare HL7 Messages</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Textarea
+                    placeholder="Paste HL7 Message A here..."
+                    value={messageA}
+                    onChange={(e) => setMessageA(e.target.value)}
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                  <Textarea
+                    placeholder="Paste HL7 Message B here..."
+                    value={messageB}
+                    onChange={(e) => setMessageB(e.target.value)}
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                </div>
+                <Button
+                  onClick={() => {
+                    const parser = new HL7Parser();
+                    const resultA = parser.parse(messageA);
+                    const resultB = parser.parse(messageB);
+                    setParsedMessageA(resultA.message);
+                    setParsedMessageB(resultB.message);
+                    // TODO: Handle parsing errors for A and B if needed for UI
+                    setDiffResult(compareHl7Messages(resultA.message, resultB.message));
+                  }}
+                  disabled={!messageA || !messageB}
+                >
+                  Compare Messages
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Diff Result Display */}
+            {diffResult && (
+              <div className="my-6">
+                <HL7DiffView diffResult={diffResult} />
+              </div>
+            )}
+
+            {/* Global Search Input */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Input
+                  placeholder="Search across all views..."
+                  value={globalSearchTermInput}
+                  onChange={(e) => setGlobalSearchTermInput(e.target.value)}
+                  className="pl-10 py-2 w-full"
+                />
               </div>
             </div>
 
             {/* Status Bar */}
             <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border dark:border-slate-700 shadow-sm">
               <div className="flex items-center gap-2">
-                {parsedMessage ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                {parsedMessage ? ( /* This refers to the main viewer's message */
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
                 )}
                 <span className="text-sm font-medium">
                   {parsedMessage ? "Message Parsed Successfully" : "No Message Loaded"}
@@ -247,14 +351,22 @@ export default function HL7Viewer() {
                   {/* Error Display */}
                   {errors.length > 0 && (
                     <div className="mt-4 space-y-2">
-                      {errors.map((error, index) => (
-                        <Alert key={index} variant="destructive">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertDescription>
-                            <strong>Line {error.line}:</strong> {error.message}
-                          </AlertDescription>
-                        </Alert>
-                      ))}
+                      {errors.map((error, index) => {
+                        const severityLabel = error.severity ? `[${error.severity.toUpperCase()}] ` : "";
+                        const fieldInfo = error.fieldName ? `${error.fieldName} ` : "";
+                        const segmentInfo = error.segmentName ? `(Segment: ${error.segmentName})` : "";
+                        const lineInfo = error.line > 0 ? `Line ${error.line}: ` : ""; // Only show line if > 0
+
+                        return (
+                          <Alert key={index} variant={error.severity === "warning" ? "default" : "destructive"} className={error.severity === "warning" ? "border-yellow-500 text-yellow-700 dark:border-yellow-600 dark:text-yellow-300" : ""}>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>{severityLabel}{lineInfo}</strong>{fieldInfo}{error.message}{" "}
+                              {segmentInfo}
+                            </AlertDescription>
+                          </Alert>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -281,8 +393,8 @@ export default function HL7Viewer() {
                           variant="outline"
                           size="sm"
                           onClick={() => setShowSaveDialog(true)}
-                          disabled={supabaseConnected === false}
-                          title={supabaseConnected === false ? "Database connection required" : "Save message"}
+                          disabled={!session} // Updated disabled state
+                          title={!session ? "Login required to save message" : "Save message"}
                         >
                           <Save className="h-4 w-4 mr-1" />
                           Save
@@ -314,20 +426,20 @@ export default function HL7Viewer() {
                       </TabsList>
 
                       <TabsContent value="tree" className="mt-6">
-                        <HL7TreeView message={parsedMessage} />
+                        <HL7TreeView message={parsedMessage} errors={errors} searchTerm={globalSearchTerm} />
                       </TabsContent>
 
                       <TabsContent value="table" className="mt-6">
-                        <HL7TableView message={parsedMessage} />
+                        <HL7TableView message={parsedMessage} errors={errors} searchTerm={globalSearchTerm} />
                       </TabsContent>
 
                       <TabsContent value="raw" className="mt-6">
-                        <HL7RawView message={message} errors={errors} />
+                        <HL7RawView message={message} errors={errors} searchTerm={globalSearchTerm} />
                       </TabsContent>
                     </Tabs>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <FileText className="h-12 w-12 text-slate-400 dark:text-slate-500 mb-4" />
+                      <FileText className="h-12 w-12 text-slate-500 dark:text-slate-400 mb-4" /> {/* Adjusted slate colors for consistency */}
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                         No Message Loaded
                       </h3>

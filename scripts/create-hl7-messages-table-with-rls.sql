@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS hl7_messages (
   parsed_message JSONB NOT NULL,
   message_type VARCHAR(50) NOT NULL,
   version VARCHAR(20) NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- Add user_id column
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -18,32 +19,34 @@ CREATE TABLE IF NOT EXISTS hl7_messages (
 CREATE INDEX IF NOT EXISTS idx_hl7_messages_message_type ON hl7_messages(message_type);
 CREATE INDEX IF NOT EXISTS idx_hl7_messages_created_at ON hl7_messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hl7_messages_name ON hl7_messages(name);
+CREATE INDEX IF NOT EXISTS idx_hl7_messages_user_id ON hl7_messages(user_id); -- Index for user_id
 
 -- Enable RLS
 ALTER TABLE hl7_messages ENABLE ROW LEVEL SECURITY;
 
--- Create policies for anonymous access (for demo purposes)
--- WARNING: These policies allow anyone to read/write data
--- In production, you should implement proper authentication and user-specific policies
-
--- Drop existing policies if they exist
+-- Remove existing anonymous policies as they are too permissive
 DROP POLICY IF EXISTS "Allow anonymous read access" ON hl7_messages;
 DROP POLICY IF EXISTS "Allow anonymous insert access" ON hl7_messages;
 DROP POLICY IF EXISTS "Allow anonymous update access" ON hl7_messages;
 DROP POLICY IF EXISTS "Allow anonymous delete access" ON hl7_messages;
 
--- Create new policies
-CREATE POLICY "Allow anonymous read access" ON hl7_messages
-  FOR SELECT USING (true);
+-- RLS Policies for user-specific access
+-- Ensure policies are dropped before creating to avoid errors on re-runs for idempotency
+DROP POLICY IF EXISTS "Allow individual select access" ON hl7_messages;
+CREATE POLICY "Allow individual select access" ON hl7_messages
+  FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Allow anonymous insert access" ON hl7_messages
-  FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow individual insert access" ON hl7_messages;
+CREATE POLICY "Allow individual insert access" ON hl7_messages
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Allow anonymous update access" ON hl7_messages
-  FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Allow individual update access" ON hl7_messages;
+CREATE POLICY "Allow individual update access" ON hl7_messages
+  FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Allow anonymous delete access" ON hl7_messages
-  FOR DELETE USING (true);
+DROP POLICY IF EXISTS "Allow individual delete access" ON hl7_messages;
+CREATE POLICY "Allow individual delete access" ON hl7_messages
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- Create a trigger to update the updated_at column
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -61,23 +64,14 @@ BEFORE UPDATE ON hl7_messages
 FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();
 
--- Clean up any existing test records and insert a new one
-DELETE FROM hl7_messages WHERE name = 'Test Message';
-
--- Insert a test record to verify the table works
-INSERT INTO hl7_messages (name, description, raw_message, parsed_message, message_type, version)
-VALUES (
-  'Test Message',
-  'This is a test message to verify the table setup with RLS',
-  'MSH|^~\&|TEST|TEST|TEST|TEST|20231201120000||ADT^A01|123|P|2.5|',
-  '{"messageType": "ADT^A01", "version": "2.5", "segments": []}',
-  'ADT^A01',
-  '2.5'
-);
+-- Remove generic test data insertion as data should be user-specific now
+-- Ensure this only deletes the old generic test message if it exists and is not tied to a user
+DELETE FROM hl7_messages WHERE user_id IS NULL AND name = 'Test Message';
 
 -- Output confirmation
 SELECT 
-  'HL7 messages table created successfully with RLS policies' AS result,
-  COUNT(*) AS total_records,
-  'RLS is enabled with anonymous access policies' AS security_note
-FROM hl7_messages;
+  'HL7 messages table updated/created successfully with user-specific RLS policies.' AS result,
+  (SELECT COUNT(*) FROM hl7_messages) AS total_records_overall, -- Shows count of all messages, RLS might restrict viewing for specific users here
+  'RLS is enabled. Users can only access their own messages.' AS security_note,
+  (SELECT string_agg(polname, ', ') FROM pg_policies WHERE tablename = 'hl7_messages') AS policies_applied
+FROM pg_tables WHERE tablename = 'hl7_messages'; -- Check table existence for primary output row
