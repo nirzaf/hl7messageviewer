@@ -36,6 +36,7 @@ import { AuthForm } from "@/components/auth-form"
 import { HL7DiffView } from "@/components/hl7-diff-view"; // Import HL7DiffView
 import { useToast } from "@/hooks/use-toast"
 import { testSupabaseConnection } from "@/lib/supabase"
+import type { Session } from "@supabase/supabase-js"; // Import Session type
 
 const sampleMessage = `MSH|^~\\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
 PID|0001|0000112234^^^MR^MRN|0000112234^^^MR^MRN~444333333^^^SSN^|EVERYMAN^ADAM^A^III||19610615|M||C|1200 N ELM STREET^^GREENSBORO^NC^27401-1020|GL|(919)379-1212|(919)271-3434~(919)277-3114|E|NON|400003716|999-99-9999|||||||||||200007010000|
@@ -50,7 +51,6 @@ export default function HL7Viewer() {
   const [message, setMessage] = useState("")
   const [parsedMessage, setParsedMessage] = useState<ParsedHL7Message | null>(null)
   const [errors, setErrors] = useState<HL7Error[]>([])
-import type { Session } from "@supabase/supabase-js"; // Import Session type
 
   const [globalSearchTermInput, setGlobalSearchTermInput] = useState(""); // Input value
   const [globalSearchTerm, setGlobalSearchTerm] = useState(""); // Debounced value
