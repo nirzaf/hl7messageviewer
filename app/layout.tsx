@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'HL7 Message Viewer',
+  description: 'Advanced parsing and analysis tool for HL7 2.x messages',
   generator: 'v0.dev',
 }
 
@@ -13,8 +13,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   )
 }
