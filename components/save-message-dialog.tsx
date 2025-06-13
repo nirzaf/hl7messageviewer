@@ -153,6 +153,7 @@ export function SaveMessageDialog({ open, onOpenChange, message, rawMessage }: S
       toast({
         title: "Message saved",
         description: "Your HL7 message has been saved successfully",
+        variant: "default",
       })
 
       // Reset form and close dialog
